@@ -64,8 +64,8 @@ export const dashboardConfig = {
 
 export const pricingPlans: SubscriptionPlan[] = [
   {
-    id: "free",
-    name: "Free",
+    id: "starter",
+    name: "Starter",
     description: "For individuals and side projects getting started.",
     stripePriceId: "",
     price: 0,
@@ -77,10 +77,10 @@ export const pricingPlans: SubscriptionPlan[] = [
     ],
   },
   {
-    id: "pro",
-    name: "Pro",
+    id: "growth",
+    name: "Growth",
     description: "For growing teams that need power and flexibility.",
-    stripePriceId: "price_stripe_pro_id_placeholder",
+    stripePriceId: "price_stripe_growth_id_placeholder",
     price: 19,
     features: [
       "Unlimited projects",
@@ -93,10 +93,10 @@ export const pricingPlans: SubscriptionPlan[] = [
     isPopular: true,
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
+    id: "pro",
+    name: "Pro",
     description: "Custom scale solutions for large organizations.",
-    stripePriceId: "price_stripe_enterprise_id_placeholder",
+    stripePriceId: "price_stripe_pro_enterprise_id_placeholder",
     price: 99,
     features: [
       "Dedicated account manager",

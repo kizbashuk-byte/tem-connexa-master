@@ -1,0 +1,27 @@
+
+> temp-connexa@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.102:3000
+- Environments: .env.local
+✓ Ready in 663ms
+
+
+
+--- getUser() ERROR REPRODUCED ---
+error.message: Auth session missing!
+error.name: AuthSessionMissingError
+error.code: undefined
+error.status: 400
+JSON.stringify: {
+  "name": "AuthSessionMissingError",
+  "message": "Auth session missing!",
+  "status": 400
+}
+--- /getUser() ERROR REPRODUCED ---
+
+
+ GET /ai-settings 307 in 830ms (next.js: 160ms, proxy.ts: 288ms, application-code: 381ms)
+[?25h

@@ -35,7 +35,7 @@ export default async function ConversationPage({
       id,
       status,
       last_message_at,
-      customers ( id, name, phone, whatsapp_id, email ),
+      customers ( id, name, phone, whatsapp_id, email, messenger_psid ),
       events ( id, event_name, starts_at, venue_name, djs, teachers, dress_code, parking_info, ai_knowledge_base )
     `)
     .eq("id", id)
@@ -47,7 +47,7 @@ export default async function ConversationPage({
   const customer = Array.isArray(conv.customers) ? conv.customers[0] : conv.customers;
   const eventsObj = Array.isArray(conv.events) ? conv.events[0] : conv.events;
 
-  const attendeeName = customer?.name || customer?.whatsapp_id || customer?.phone || "Unknown Attendee";
+  const attendeeName = customer?.name || customer?.whatsapp_id || customer?.messenger_psid || customer?.phone || "Unknown Attendee";
   const attendeeEmail = customer?.email || "No email provided";
   const attendeePhone = customer?.phone || "No phone provided";
   const eventName = eventsObj?.event_name || "Unknown Event";

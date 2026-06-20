@@ -31,7 +31,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
         id,
         status,
         last_message_at,
-        customers ( id, name, phone, whatsapp_id ),
+        customers ( id, name, phone, whatsapp_id, messenger_psid ),
         events ( id, event_name )
       `)
       .eq("tenant_id", tenantId)
@@ -205,7 +205,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                 {conversations.map((conv) => {
                   const customer = Array.isArray(conv.customers) ? conv.customers[0] : conv.customers;
                   const event = Array.isArray(conv.events) ? conv.events[0] : conv.events;
-                  const attendeeName = customer?.name || customer?.whatsapp_id || customer?.phone || "Unknown Attendee";
+                  const attendeeName = customer?.name || customer?.whatsapp_id || customer?.messenger_psid || customer?.phone || "Unknown Attendee";
                   const eventName = event?.event_name || "Unknown Event";
                   const status = conv.status || "open";
                   const initials = typeof attendeeName === "string" ? attendeeName.charAt(0).toUpperCase() : "?";

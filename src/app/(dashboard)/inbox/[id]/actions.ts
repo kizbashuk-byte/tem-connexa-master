@@ -20,10 +20,10 @@ export async function approveAndSendMessage(conversationId: string, _messageLogI
 
     if (!member?.tenant_id) return { success: false, error: "No tenant membership found" };
 
-    // 2. Fetch the conversation to get the customer's whatsapp_id
+    // 2. Fetch the conversation to get the customer's identifiers
     const { data: convData, error: fetchConvError } = await supabase
       .from("conversations")
-      .select("customers ( whatsapp_id )")
+      .select("customers ( whatsapp_id, messenger_psid )")
       .eq("id", conversationId)
       .eq("tenant_id", member.tenant_id)
       .single();
@@ -32,6 +32,7 @@ export async function approveAndSendMessage(conversationId: string, _messageLogI
 
     const customerObj = Array.isArray(convData.customers) ? convData.customers[0] : convData.customers;
     const toWhatsappId = customerObj?.whatsapp_id;
+    const toMessengerPsid = customerObj?.messenger_psid;
 
     // 3. Update the conversation status to resolved
     const { error: convError } = await supabase
@@ -42,35 +43,73 @@ export async function approveAndSendMessage(conversationId: string, _messageLogI
 
     if (convError) throw convError;
 
-    // 3. Insert the AI reply as a new message row
-    const { error: msgError } = await supabase
-      .from("messages")
-      .insert({
-        conversation_id: conversationId,
-        tenant_id: member.tenant_id,
-        sender_type: "ai",
-        message_type: "text",
-        content: aiReply,
+    // 4. Branch based on channel (Messenger vs WhatsApp)
+    if (toMessengerPsid) {
+      // --- FACEBOOK MESSENGER FLOW ---
+      const fbToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+      if (!fbToken) throw new Error("Missing FACEBOOK_PAGE_ACCESS_TOKEN");
+
+      // Transmit via Facebook Graph API first
+      const fbResponse = await fetch(`https://graph.facebook.com/v25.0/me/messages?access_token=${fbToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient: { id: toMessengerPsid },
+          message: { text: aiReply }
+        })
       });
 
-    if (msgError) throw msgError;
+      if (!fbResponse.ok) {
+        const errData = await fbResponse.json();
+        throw new Error(errData.error?.message || "Unknown Facebook Graph API Error");
+      }
 
-    // 5. Transmit the message via Twilio WhatsApp API
-    if (toWhatsappId && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER) {
-      const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-      try {
-        await client.messages.create({
-          from: process.env.TWILIO_WHATSAPP_NUMBER,
-          to: toWhatsappId,
-          body: aiReply,
+      const fbResData = await fbResponse.json();
+
+      // Insert outgoing message into DB after Facebook confirms success
+      const { error: msgError } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: conversationId,
+          tenant_id: member.tenant_id,
+          sender_type: "organizer",
+          message_type: "text",
+          content: aiReply,
+          provider_message_id: fbResData.message_id || null
         });
-      } catch (twilioErr: any) {
-        console.error("Twilio transmission failed:", twilioErr);
-        // We log the error but don't fail the DB update since the message was already saved locally
+
+      if (msgError) throw msgError;
+
+    } else {
+      // --- WHATSAPP FLOW (Preserved) ---
+      // Insert the AI reply as a new message row
+      const { error: msgError } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: conversationId,
+          tenant_id: member.tenant_id,
+          sender_type: "ai",
+          message_type: "text",
+          content: aiReply,
+        });
+
+      if (msgError) throw msgError;
+
+      // Transmit the message via Twilio WhatsApp API
+      if (toWhatsappId && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER) {
+        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        try {
+          await client.messages.create({
+            from: process.env.TWILIO_WHATSAPP_NUMBER,
+            to: toWhatsappId,
+            body: aiReply,
+          });
+        } catch (twilioErr: any) {
+          console.error("Twilio transmission failed:", twilioErr);
+          // We log the error but don't fail the DB update since the message was already saved locally
+        }
       }
     }
-
-
 
     revalidatePath(`/inbox/${conversationId}`);
     return { success: true };

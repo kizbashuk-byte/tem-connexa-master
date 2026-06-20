@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -26,14 +27,93 @@ export async function POST(request: Request) {
 
     // Verify this is a webhook from a Facebook Page
     if (body.object === "page") {
+      // Initialize Supabase service client
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Find a default tenant/event to route to (for dev sandbox purposes)
+      const { data: eventRow, error: eventError } = await supabase
+        .from("events")
+        .select("id, tenant_id")
+        .limit(1)
+        .maybeSingle();
+
+      if (eventError || !eventRow) {
+        console.error("Webhook Error: No event found to route message to.");
+        return new NextResponse("No active event", { status: 400 });
+      }
+
+      const tenantId = eventRow.tenant_id;
+      const eventId = eventRow.id;
+
       // Iterate over each entry. There may be multiple if batched.
-      body.entry?.forEach((entry: any) => {
+      for (const entry of body.entry || []) {
         // Gets the body of the webhook event
         const webhook_event = entry.messaging?.[0];
-        
-        // Log the payload for now as requested (no processing yet)
-        console.log("FACEBOOK WEBHOOK PAYLOAD RECEIVED:", JSON.stringify(webhook_event, null, 2));
-      });
+        if (!webhook_event || !webhook_event.message || !webhook_event.message.text) continue;
+
+        const senderPsid = webhook_event.sender.id;
+        const messageMid = webhook_event.message.mid;
+        const messageText = webhook_event.message.text;
+        const timestamp = webhook_event.timestamp;
+
+        // Upsert Customer
+        const { data: customer, error: customerError } = await supabase
+          .from("customers")
+          .upsert(
+            {
+              tenant_id: tenantId,
+              name: `Messenger User ${senderPsid}`,
+              messenger_psid: senderPsid
+            },
+            { onConflict: "messenger_psid" }
+          )
+          .select("id")
+          .single();
+
+        if (customerError || !customer) {
+          console.error("Webhook Error: Failed to upsert customer", customerError);
+          continue;
+        }
+
+        // Upsert Conversation
+        const { data: conversation, error: convError } = await supabase
+          .from("conversations")
+          .upsert(
+            {
+              tenant_id: tenantId,
+              event_id: eventId,
+              customer_id: customer.id,
+              status: "open",
+              last_message_at: new Date(timestamp).toISOString(),
+            },
+            { onConflict: "event_id,customer_id" }
+          )
+          .select("id")
+          .single();
+
+        if (convError || !conversation) {
+          console.error("Webhook Error: Failed to upsert conversation", convError);
+          continue;
+        }
+
+        // Insert Message
+        const { error: msgError } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: conversation.id,
+            tenant_id: tenantId,
+            sender_type: "customer",
+            message_type: "text",
+            content: messageText,
+            provider_message_id: messageMid
+          });
+
+        if (msgError) {
+          console.error("Webhook Error: Failed to insert message", msgError);
+        }
+      }
 
       // Returns a '200 OK' response to all requests
       return new NextResponse("EVENT_RECEIVED", { status: 200 });

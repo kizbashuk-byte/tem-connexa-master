@@ -1,5 +1,7 @@
 import React from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 const channels = [
   {
@@ -70,7 +72,47 @@ const channels = [
   }
 ];
 
-export default function ChannelsPage() {
+export default async function ChannelsPage() {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+
+  if (!authData?.user) {
+    redirect("/login");
+  }
+
+  const { data: member } = await supabase
+    .from("tenant_members")
+    .select("tenant_id")
+    .eq("user_id", authData.user.id)
+    .maybeSingle();
+
+  const tenantId = member?.tenant_id;
+  
+  // Fetch connected channels
+  const { data: integrations } = await supabase
+    .from("tenant_integrations")
+    .select("channel, provider_account_id")
+    .eq("tenant_id", tenantId);
+
+  const connectedChannels = integrations?.reduce((acc: any, int: any) => {
+    acc[int.channel] = int.provider_account_id;
+    return acc;
+  }, {}) || {};
+
+  // Clone channels array to inject dynamic status
+  const dynamicChannels = channels.map(channel => {
+    if (channel.id === "instagram") {
+      const isConnected = !!connectedChannels["instagram"];
+      return {
+        ...channel,
+        status: isConnected ? "connected" : "not_connected",
+        identifier: isConnected ? `IG ID: ${connectedChannels["instagram"]}` : undefined,
+        actionUrl: isConnected ? "#" : "/api/auth/instagram"
+      };
+    }
+    return { ...channel, actionUrl: "#" };
+  });
+
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
       {/* Header */}
@@ -82,7 +124,7 @@ export default function ChannelsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {channels.map((channel) => (
+        {dynamicChannels.map((channel) => (
           <div 
             key={channel.id} 
             className={`flex flex-col bg-white border ${channel.status === 'connected' ? 'border-green-200 shadow-md ring-1 ring-green-100' : 'border-gray-200 shadow-sm'} rounded-2xl overflow-hidden transition-all duration-200 ${channel.hoverColor}`}
@@ -119,15 +161,15 @@ export default function ChannelsPage() {
             </div>
             
             <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-              <button 
-                className={`w-full py-2.5 px-4 rounded-xl text-sm font-bold transition-colors ${
-                  channel.status === "connected" 
-                    ? "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50" 
-                    : `text-white ${channel.color} hover:opacity-90 shadow-sm`
-                }`}
-              >
-                {channel.status === "connected" ? "Manage Settings" : `Connect ${channel.name}`}
-              </button>
+              {channel.status === "connected" ? (
+                <button className="w-full py-2.5 px-4 rounded-xl text-sm font-bold transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-50">
+                  Manage Settings
+                </button>
+              ) : (
+                <Link href={channel.actionUrl || "#"} className={`block text-center w-full py-2.5 px-4 rounded-xl text-sm font-bold transition-colors text-white ${channel.color} hover:opacity-90 shadow-sm`}>
+                  Connect {channel.name}
+                </Link>
+              )}
             </div>
           </div>
         ))}

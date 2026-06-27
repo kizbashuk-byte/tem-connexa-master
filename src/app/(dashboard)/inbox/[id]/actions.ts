@@ -23,7 +23,7 @@ export async function approveAndSendMessage(conversationId: string, _messageLogI
     // 2. Fetch the conversation to get the customer's identifiers
     const { data: convData, error: fetchConvError } = await supabase
       .from("conversations")
-      .select("customers ( whatsapp_id, messenger_psid )")
+      .select("customers ( whatsapp_id, messenger_psid, instagram_id )")
       .eq("id", conversationId)
       .eq("tenant_id", member.tenant_id)
       .single();
@@ -33,6 +33,7 @@ export async function approveAndSendMessage(conversationId: string, _messageLogI
     const customerObj = Array.isArray(convData.customers) ? convData.customers[0] : convData.customers;
     const toWhatsappId = customerObj?.whatsapp_id;
     const toMessengerPsid = customerObj?.messenger_psid;
+    const toInstagramId = customerObj?.instagram_id;
 
     // 3. Update the conversation status to resolved
     const { error: convError } = await supabase
@@ -43,30 +44,46 @@ export async function approveAndSendMessage(conversationId: string, _messageLogI
 
     if (convError) throw convError;
 
-    // 4. Branch based on channel (Messenger vs WhatsApp)
-    if (toMessengerPsid) {
-      // --- FACEBOOK MESSENGER FLOW ---
-      const fbToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-      if (!fbToken) throw new Error("Missing FACEBOOK_PAGE_ACCESS_TOKEN");
+    // 4. Branch based on channel (Meta Graph API vs WhatsApp)
+    if (toInstagramId || toMessengerPsid) {
+      // --- META GRAPH API FLOW (Instagram & Messenger) ---
+      let accessToken = null;
+      let recipientId = null;
+
+      if (toInstagramId) {
+        recipientId = toInstagramId;
+        const { data: integration } = await supabase
+          .from("tenant_integrations")
+          .select("access_token")
+          .eq("tenant_id", member.tenant_id)
+          .eq("channel", "instagram")
+          .single();
+        if (!integration?.access_token) throw new Error("Instagram integration not configured or token missing");
+        accessToken = integration.access_token;
+      } else {
+        recipientId = toMessengerPsid;
+        accessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+        if (!accessToken) throw new Error("Missing FACEBOOK_PAGE_ACCESS_TOKEN");
+      }
 
       // Transmit via Facebook Graph API first
-      const fbResponse = await fetch(`https://graph.facebook.com/v25.0/me/messages?access_token=${fbToken}`, {
+      const fbResponse = await fetch(`https://graph.facebook.com/v25.0/me/messages?access_token=${accessToken}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipient: { id: toMessengerPsid },
+          recipient: { id: recipientId },
           message: { text: aiReply }
         })
       });
 
       if (!fbResponse.ok) {
         const errData = await fbResponse.json();
-        throw new Error(errData.error?.message || "Unknown Facebook Graph API Error");
+        throw new Error(errData.error?.message || "Unknown Meta Graph API Error");
       }
 
       const fbResData = await fbResponse.json();
 
-      // Insert outgoing message into DB after Facebook confirms success
+      // Insert outgoing message into DB after Meta confirms success
       const { error: msgError } = await supabase
         .from("messages")
         .insert({

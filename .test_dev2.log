@@ -1,0 +1,18 @@
+
+> temp-connexa@0.1.0 dev
+> next dev -p 3001
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.1.102:3001
+- Environments: .env.local
+✓ Ready in 783ms
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          91969
+- Dir:          /Users/williamyoulou/TempConnexa-Master
+- Log:          .next/dev/logs/next-development.log
+
+Run kill 91969 to stop it.
+[?25h

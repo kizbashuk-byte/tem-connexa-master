@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     if (eventsData) {
       events = eventsData;
       totalEvents = events.length;
-      
+
       const now = new Date();
       now.setHours(0, 0, 0, 0);
       upcomingEventsCount = events.filter((e) => {
@@ -117,81 +117,81 @@ export default async function DashboardPage() {
 
             <div className="bg-emerald-50 rounded-md p-6 mb-8 border border-emerald-200">
               <h2 className="text-lg font-semibold text-emerald-900 mb-4">Upcoming Events</h2>
-            {events.length > 0 ? (
-              <div className="space-y-4">
-                {events.map((event, index) => (
-                  <div
-                    key={event.id || index}
-                    className="flex flex-col sm:flex-row bg-white rounded-lg shadow-sm border border-emerald-100 overflow-hidden hover:shadow-md transition-shadow duration-200"
-                  >
-                    {/* Banner Image */}
-                    <div className="w-full sm:w-48 h-32 sm:h-auto bg-gray-100 shrink-0 relative">
-                      {event.banner_image_url ? (
-                        <img 
-                          src={event.banner_image_url} 
-                          alt={event.event_name || "Event Banner"} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Event Details */}
-                    <div className="flex-1 p-4 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start mb-2 gap-4">
-                          <h3 className="font-bold text-lg text-gray-900">{event.event_name || "Unnamed Event"}</h3>
-                          {event.is_delayed ? (
-                            <span className="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              DELAYED
-                            </span>
-                          ) : (
-                            <span className="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              ON SCHEDULE
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="space-y-1 mb-4">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <svg className="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              {events.length > 0 ? (
+                <div className="space-y-4">
+                  {events.map((event, index) => (
+                    <div
+                      key={event.id || index}
+                      className="flex flex-col sm:flex-row bg-white rounded-lg shadow-sm border border-emerald-100 overflow-hidden hover:shadow-md transition-shadow duration-200"
+                    >
+                      {/* Banner Image */}
+                      <div className="w-full sm:w-48 h-32 sm:h-auto bg-gray-100 shrink-0 relative">
+                        {event.banner_image_url ? (
+                          <img
+                            src={event.banner_image_url}
+                            alt={event.event_name || "Event Banner"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {event.starts_at ? new Date(event.starts_at).toLocaleDateString() : "No date"}
-                            {event.starts_at && ` • ${new Date(event.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                           </div>
-                          
-                          <div className="flex items-center text-sm text-gray-600">
-                            <svg className="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            {event.venue_name || "Venue TBD"}
-                          </div>
-                        </div>
+                        )}
                       </div>
 
-                      <div className="flex justify-end mt-2">
-                        <Link
-                          href={`/events/${event.id}`}
-                          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm hover:bg-emerald-100 hover:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-150"
-                        >
-                          View Event
-                        </Link>
+                      {/* Event Details */}
+                      <div className="flex-1 p-4 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-2 gap-4">
+                            <h3 className="font-bold text-lg text-gray-900">{event.event_name || "Unnamed Event"}</h3>
+                            {event.is_delayed ? (
+                              <span className="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                DELAYED
+                              </span>
+                            ) : (
+                              <span className="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ON SCHEDULE
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="space-y-1 mb-4">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <svg className="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              {event.starts_at ? new Date(event.starts_at).toLocaleDateString() : "No date"}
+                              {event.starts_at && ` • ${new Date(event.starts_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                            </div>
+
+                            <div className="flex items-center text-sm text-gray-600">
+                              <svg className="w-4 h-4 mr-2 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              {event.venue_name || "Venue TBD"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end mt-2">
+                          <Link
+                            href={`/events/${event.id}`}
+                            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md shadow-sm hover:bg-emerald-100 hover:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-150"
+                          >
+                            View Event
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-emerald-800">No events found.</p>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-emerald-800">No events found.</p>
+              )}
+            </div>
           </>
         )}
 

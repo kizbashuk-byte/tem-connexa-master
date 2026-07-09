@@ -40,8 +40,8 @@ export default function Login() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-green-600 mb-4">✅ Logged In</h2>
           <p className="text-gray-700 mb-6">Welcome back, <strong>{userEmail}</strong>!</p>
-          <button 
-            onClick={() => window.location.href = "/dashboard"}
+          <button
+            onClick={() => { router.push("/dashboard"); }}
             className="inline-block py-2 px-6 bg-gray-800 text-white font-medium rounded-md hover:bg-gray-900 transition-colors"
           >
             Go to Dashboard
@@ -58,7 +58,7 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Connexa</h1>
           <h2 className="text-xl font-semibold text-gray-700">Welcome Back</h2>
         </div>
-        
+
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
@@ -74,7 +74,7 @@ export default function Login() {
               placeholder="you@example.com"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">
               Password
@@ -104,14 +104,14 @@ export default function Login() {
             {status === "loading" ? "Logging in..." : "Log In"}
           </button>
         </form>
-        
+
         <div className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{" "}
           <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
             Sign up
           </Link>
         </div>
-        
+
         <div className="mt-4 text-center">
           <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
             &larr; Back to Home
